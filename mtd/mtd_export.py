@@ -224,19 +224,37 @@ try:
 	# No commit as you don-t need to commit DDL.
 	
 	outpt = con.execute(sql)
-	# directList = [dict(row.items()) for row in outpt]
+	#directList = [dict(row.items()) for row in outpt]
 except Exception as e:
 	logger.error("DB Error")
 	logger.error(f'{e}')
+	con.close()
+	engine.dispose()
 	sys.exit('DB Error')
 	
 logger.info('Create mtd file')
 
+cardno = list()
+cardno = [r[0] for r in outpt]
+# logger.info(f"{cardno}")
+logger.info('update history table')
+insert_to_tbl_stmt = f"INSERT INTO SBCC_RPTNG_BB.GZB_MTD_HISTORY VALUES  (sysdate,:1)"
+# con.executemanny(insert_to_tbl_stmt,i)
+for i in cardno:
+	con.execute(insert_to_tbl_stmt,i)
+# con.commit()
 
 
+# con.close()
+# engine.dispose()
+# sys.exit('YEA')
+logger.info("Write whitelist")
+#convert to list of lists
+cardno = list(map(lambda x:[x], cardno))
 with open('/tmp/mtdwhite.txt', 'w') as csvfile: 
 	outcsv = csv.writer(csvfile)
-	outcsv.writerows(outpt)
+	outcsv.writerows(cardno)
+
 
 logger.info('Close Connection')    
 con.close()
