@@ -6,6 +6,8 @@ from pathlib import Path
 import os
 import sys
 import csv
+import requests
+
 #import smtplib
 #from email.message import EmailMessage
 
@@ -38,92 +40,61 @@ WITH terms AS (
 				--MOD07
 				--and sysdate between stvterm_start_date - 8 and stvterm_end_date
 				--MOD10
+    SELECT
+        "mtd_term_code" AS term_code
+    FROM
+        sbcc_rptng_bb.gzb_mtd_terms
+    WHERE
+        sysdate BETWEEN "mtd_term_start_date" AND "mtd_term_end_date"
+)
+SELECT
+    '721'
+    || substr(cardnum, - 8, 8)
+    ||
+        CASE
+            WHEN issue_number = '00' THEN
+                '01'
+            ELSE
+                issue_number
+        END
+    AS cardnumber
+FROM
+         sgrsatt left
+    INNER JOIN sbcc_rptng_bb.gzv_card ON gzf_get_pidm('K'
+                                                      || substr(cardnum, - 8, 8)) = sgrsatt_pidm
+WHERE
+        sgrsatt_atts_code = 'MTDB'
+    AND sgrsatt_term_code_eff IN (
+        SELECT
+            terms.term_code
+        FROM
+            terms
+    )
+UNION
+SELECT
+    '721'
+    || substr(cardnum, - 8, 8)
+    ||
+        CASE
+            WHEN issue_number = '00' THEN
+                '01'
+            ELSE
+                issue_number
+        END
+    AS cardnumber
+FROM
+         sbcc_rptng_bb.gzb_mtd_whtlst left
+    INNER JOIN sbcc_rptng_bb.gzv_card ON 'K'
+                                         || substr(cardnum, - 8, 8) = knum
+'''
+sql = '''
+WITH terms AS (
 	SELECT
 		"mtd_term_code" AS term_code
 	FROM
 		sbcc_rptng_bb.gzb_mtd_terms
 	WHERE
 		sysdate BETWEEN "mtd_term_start_date" AND "mtd_term_end_date"
-), cr_student_oc AS (
-	SELECT
-		substr(gzf_get_id(sfrstcr_pidm), 2, 9) AS cr_student_oc
-	FROM
-			 sfrstcr
-		INNER JOIN stvrsts ON sfrstcr_rsts_code = stvrsts_code
-							  AND stvrsts_incl_sect_enrl = 'Y'
-		LEFT OUTER JOIN ssbsect ON ( ssbsect_term_code = sfrstcr_term_code
-									 AND ssbsect_crn = sfrstcr_crn )
-	WHERE
-			ssbsect_camp_code = 1
-		AND sfrstcr_levl_code = 'CR'
-		AND sfrstcr_term_code IN (
-			SELECT
-				terms.term_code
-			FROM
-				terms
-		)
-	GROUP BY
-		sfrstcr_pidm
-	HAVING
-		SUM(sfrstcr_credit_hr) >= 0.5
-), cr_student AS (
-	SELECT
-		substr(gzf_get_id(sfrstcr_pidm), 2, 9) AS cr_student
-	FROM
-			 sfrstcr
-		INNER JOIN stvrsts ON sfrstcr_rsts_code = stvrsts_code
-							  AND stvrsts_incl_sect_enrl = 'Y'
-		LEFT OUTER JOIN ssbsect ON ( ssbsect_term_code = sfrstcr_term_code
-									 AND ssbsect_crn = sfrstcr_crn )
-	WHERE
-			ssbsect_camp_code <> 6
-		AND sfrstcr_levl_code = 'CR'
-		AND sfrstcr_term_code IN (
-			SELECT
-				terms.term_code
-			FROM
-				terms
-		)
-	GROUP BY
-		sfrstcr_pidm
-	HAVING
-		SUM(sfrstcr_credit_hr) >= 0.5
-), in_district AS (
-	SELECT
-		substr(gzf_get_id(spraddr_pidm), 2, 9) AS in_district
-	FROM
-		spraddr
-	WHERE
-		spraddr_atyp_code IN (
-			'MA',
-			'PR'
-		)
-		AND trunc(sysdate) BETWEEN nvl(trunc(spraddr_from_date), trunc(sysdate)) AND nvl(trunc(spraddr_to_date), trunc(sysdate))
-		AND substr(spraddr_zip, 1, 5) IN (
-			'93101',
-			'93102',
-			'93103',
-			'93105',
-			'93106',
-			'93107',
-			'93108',
-			'93109',
-			'93110',
-			'93111',
-			'93116',
-			'93117',
-			'93118',
-			'93013',
-			'93014',
-			'93150',
-			'93120',
-			'93121',
-			'93130',
-			'93140',
-			'93160',
-			'93190',
-			'93067'
-		)
 ), paid_tbus AS (
 	SELECT
 		substr(gzf_get_id(tbraccd_pidm), 2, 9) AS paid_tbus
@@ -139,59 +110,10 @@ WITH terms AS (
 		)
 		AND tbraccd_detail_code = 'TBUS'
 	GROUP BY
-		tbraccd_pidm
+		tbraccd_pidm,TBRACCD_TERM_CODE
 	HAVING
 		SUM(tbraccd_amount) > 0
 )
-SELECT
-	'721'
-	|| lpad(cardnumber, 8, '0')
-	||
-		CASE
-			WHEN issue_number = '00' THEN
-				'01'
-			ELSE
-				issue_number
-		END
-	AS cardnumber
-FROM
-	sbcc_rptng_bb.gzv_card
-WHERE
-	lpad(cardnumber, 8, '0') IN (
-		SELECT
-			in_district
-		FROM
-			in_district
-	)
-	AND lpad(cardnumber, 8, '0') IN (
-		SELECT
-			cr_student
-		FROM
-			cr_student
-	)
---    AND issue_number <> '00'
-UNION
-SELECT
-	'721'
-	|| lpad(cardnumber, 8, '0')
-	||
-		CASE
-			WHEN issue_number = '00' THEN
-				'01'
-			ELSE
-				issue_number
-		END
-	AS cardnumber
-FROM
-	sbcc_rptng_bb.gzv_card
-WHERE
-	lpad(cardnumber, 8, '0') IN (
-		SELECT
-			cr_student_oc
-		FROM
-			cr_student_oc
-	)
-UNION
 SELECT
 	'721'
 	|| lpad(cardnumber, 8, '0')
@@ -242,6 +164,8 @@ insert_to_tbl_stmt = f"INSERT INTO SBCC_RPTNG_BB.GZB_MTD_HISTORY VALUES  (sysdat
 # con.executemanny(insert_to_tbl_stmt,i)
 for i in cardno:
 	con.execute(insert_to_tbl_stmt,i)
+    # print(f'{i}')
+    # logger.info(f'{i}')
 # con.commit()
 
 
@@ -259,21 +183,3 @@ with open('/tmp/mtdwhite.txt', 'w') as csvfile:
 logger.info('Close Connection')    
 con.close()
 engine.dispose()
-
-# logger.info('mail to to people')
-
-# with open('/tmp/mtdwhite.txt') as fp:
-	#Create a text/plain message
-	# msg = EmailMessage()
-	# msg.set_content(fp.read())
-
-
-# msg['Subject'] = f"Tommorrow's MTD Whitelist"
-# msg['From'] = "mghens@sbcc.edu"
-# msg['To'] =  "msghens@gmail.com,mghens@sbcc.edu"
-
-
-#Send the message via our own SMTP server.
-# s = smtplib.SMTP('prelay.sbcc.edu')
-# s.send_message(msg)
-# s.quit()
