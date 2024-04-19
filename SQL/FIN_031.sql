@@ -55,11 +55,11 @@ FROM
                 WHEN substr(farinva_fund_code, 1, 1) = '3'  THEN
                     'Special Revenue Funds'
                 WHEN substr(farinva_fund_code, 1, 1) = '4'  THEN
-                    'Capital Projects Revenue Fund'
+                    'Capital Projects Funds'
                 WHEN substr(farinva_fund_code, 1, 1) = '5'  THEN
                     'Enterprise Funds'
                 WHEN substr(farinva_fund_code, 1, 1) = '6'  THEN
-                    'Internal Revenue Funds'
+                    'Internal Service Fund'
                 WHEN substr(farinva_fund_code, 1, 1) = '7'  THEN
                     'Trust Funds'
                 WHEN substr(farinva_fund_code, 1, 2) = '81' THEN
@@ -90,11 +90,11 @@ FROM
                         WHEN substr(farinva_fund_code, 1, 1) = '3'  THEN
                             'Special Revenue Funds'
                         WHEN substr(farinva_fund_code, 1, 1) = '4'  THEN
-                            'Capital Projects Revenue Fund'
+                            'Capital Projects Funds'
                         WHEN substr(farinva_fund_code, 1, 1) = '5'  THEN
                             'Enterprise Funds'
                         WHEN substr(farinva_fund_code, 1, 1) = '6'  THEN
-                            'Internal Revenue Funds'
+                            'Internal Service Fund'
                         WHEN substr(farinva_fund_code, 1, 1) = '7'  THEN
                             'Trust Funds'
                         WHEN substr(farinva_fund_code, 1, 2) = '81' THEN
